@@ -1,0 +1,58 @@
+CREATE DATABASE eticketing_system;
+USE eticketing_system;
+
+-- Users Table
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('user', 'admin') NOT NULL
+);
+
+-- Route Table
+CREATE TABLE route (
+    routeID INT AUTO_INCREMENT PRIMARY KEY,
+    source VARCHAR(100) NOT NULL,
+    destination VARCHAR(100) NOT NULL,
+    stops LONGTEXT
+);
+
+-- Bus Table
+CREATE TABLE bus (
+    busID INT AUTO_INCREMENT PRIMARY KEY,
+    numberPlate VARCHAR(20) UNIQUE NOT NULL,
+    capacity INT NOT NULL,
+    routeID INT,
+    bus_name VARCHAR(255) NOT NULL,
+    bus_image VARCHAR(255),
+    departure_time TIME NOT NULL,
+    fare DECIMAL(10,2) NOT NULL,
+    departure_date DATE NOT NULL,
+    FOREIGN KEY (routeID) REFERENCES route(routeID) ON DELETE SET NULL
+);
+
+-- Driver Table
+CREATE TABLE driver (
+    license_number VARCHAR(14) PRIMARY KEY,
+    busID INT,
+    driver_name VARCHAR(100) NOT NULL,
+    license_image VARCHAR(255),
+    FOREIGN KEY (busID) REFERENCES bus(busID) ON DELETE SET NULL
+);
+
+-- Bookings Table
+CREATE TABLE bookings (
+    bookingID INT AUTO_INCREMENT PRIMARY KEY,
+    busID INT,
+    userID INT,
+    seat_number LONGTEXT NOT NULL,
+    booking_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    departure_time TIME NOT NULL,
+    departure_date DATE NOT NULL,
+    total_fare DECIMAL(10,2) NOT NULL,
+    down_payment DECIMAL(10,2) NOT NULL,
+    refund_status ENUM('not_requested', 'refunded', 'not_refunded') DEFAULT 'not_requested',
+    FOREIGN KEY (busID) REFERENCES bus(busID) ON DELETE CASCADE,
+    FOREIGN KEY (userID) REFERENCES users(id) ON DELETE CASCADE
+);
