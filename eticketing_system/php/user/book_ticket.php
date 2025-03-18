@@ -14,7 +14,7 @@ if (!isset($_GET['busID']) || empty($_GET['busID'])) {
 $busID = $_GET['busID'];
 
 // Fetch Bus Details
-$sql = "SELECT Bus.busID, Bus.bus_name, Bus.numberPlate, Bus.capacity, Route.source, Route.destination 
+$sql = "SELECT Bus.busID, Bus.bus_name, Bus.numberPlate, Bus.capacity, Route.source, Route.destination, Bus.fare 
         FROM Bus 
         JOIN Route ON Bus.routeID = Route.routeID 
         WHERE Bus.busID = ?";
@@ -191,21 +191,15 @@ function submitBooking() {
         alert("Please select at least one seat.");
         return;
     }
-    window.location.href = "book_ticket.php?busID=<?php echo $busID; ?>&seatNumbers=" + selectedSeats.join(",");
+    
+    // Fetch fare per seat from PHP
+    const farePerSeat = <?php echo $bus['fare']; ?>;
+    const totalFare = selectedSeats.length * farePerSeat;
+    
+    // Redirect to payment.php with seat numbers, busID, and totalFare
+    window.location.href = "payment.php?busID=<?php echo $busID; ?>&seatNumbers=" + selectedSeats.join(",") + "&totalFare=" + totalFare;
 }
 </script>
 
 </body>
 </html>
-
-<?php
-if (isset($_GET['seatNumbers'])) {
-    $seatNumbers = explode(",", $_GET['seatNumbers']);
-    foreach ($seatNumbers as $seat) {
-        $insertQuery = "INSERT INTO Bookings (busID, seat_number, userID) VALUES (?, ?, ?)";
-        $stmt = $pdo->prepare($insertQuery);
-        $stmt->execute([$busID, $seat, $_SESSION['userID']]);
-    }
-    echo "<script>alert('Seats successfully booked!'); window.location.href = 'my_bookings.php';</script>";
-}
-?>

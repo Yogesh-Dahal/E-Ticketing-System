@@ -9,8 +9,8 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'user') {
 include('../db_connect.php');
 
 // Fetch all buses and their related driver details
-$sql = "SELECT Bus.busID, Bus.bus_name, Bus.numberPlate, Bus.capacity, Bus.bus_image, 
-               Route.source, Route.destination, Route.stops, 
+$sql = "SELECT Bus.busID, Bus.bus_name, Bus.numberPlate, Bus.capacity, Bus.fare, Bus.departure_date, 
+               Bus.departure_time, Bus.bus_image, Route.source, Route.destination, Route.stops, 
                Driver.driver_name, Driver.license_number, Driver.license_image 
         FROM Bus 
         JOIN Route ON Bus.routeID = Route.routeID
@@ -115,7 +115,6 @@ $buses = $stmt->fetchAll();
     <a href="search_buses.php">Search Buses</a>
     <a href="my_bookings.php">My Bookings</a>
     <a href="../index.php">Logout</a>
-
 </div>
 
 <!-- Search Buses Content -->
@@ -130,6 +129,8 @@ $buses = $stmt->fetchAll();
                     <h3><?php echo $bus['bus_name']; ?></h3>
                     <p>Number Plate: <?php echo $bus['numberPlate']; ?></p>
                     <p>Capacity: <?php echo $bus['capacity']; ?> seats</p>
+                    <p>Fare: Rs.<?php echo $bus['fare']; ?></p>
+                    <p>Departure: <?php echo $bus['departure_date']; ?> at <?php echo $bus['departure_time']; ?></p>
                     <p>Route: <?php echo $bus['source']; ?> - <?php echo $bus['destination']; ?></p>
                 </div>
                 <img src="../../uploads/bus_images/<?php echo $bus['bus_image']; ?>" alt="Bus Image">

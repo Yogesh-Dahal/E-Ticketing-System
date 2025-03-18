@@ -53,6 +53,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // Prepare the SQL query
         $query = "INSERT INTO users (name, email, password, role) VALUES (:name, :email, :password, :role)";
+
         $stmt = $pdo->prepare($query);
 
         // Bind parameters
@@ -176,7 +177,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <select name="role">
                 <option value="">Select Role</option>
                 <option value="user" <?php echo ($role == 'user') ? 'selected' : ''; ?>>User</option>
-                <option value="admin" <?php echo ($role == 'admin') ? 'selected' : ''; ?>>admin</option>
+                <option value="admin" <?php echo ($role == 'admin') ? 'selected' : ''; ?>>Admin</option>
+
             </select>
             <span class="error"><?php echo $role_err; ?></span>
         </div>

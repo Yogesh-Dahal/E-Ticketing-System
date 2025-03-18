@@ -22,6 +22,12 @@ if (isset($_POST['add_driver'])) {
     $driverLicenseNumber = $_POST['license_number'];
     $driverLicenseImage = $_FILES['license_image']['name'];
 
+    // Validate license number (must be exactly 12 digits)
+    if (!preg_match('/^\d{12}$/', $driverLicenseNumber)) {
+        echo "<script>alert('Driver license number must be exactly 12 digits.'); window.history.back();</script>";
+        exit();
+    }
+
     // Upload license image
     $targetDir = "../../uploads/driver_images/";
     $targetFile = $targetDir . basename($driverLicenseImage);
@@ -31,12 +37,13 @@ if (isset($_POST['add_driver'])) {
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$busID, $driverName, $driverLicenseNumber, $driverLicenseImage]);
 
-        echo "Driver added successfully!";
+        echo "<script>alert('Driver added successfully!'); window.location.href='manage_buses.php';</script>";
     } else {
         echo "Sorry, there was an error uploading the license image.";
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -93,7 +100,6 @@ if (isset($_POST['add_driver'])) {
         }
 
         .form-container input,
-        .form-container select,
         .form-container button {
             padding: 12px;
             font-size: 16px;
@@ -116,12 +122,25 @@ if (isset($_POST['add_driver'])) {
             background-color: #45a049;
         }
     </style>
+
+    <script>
+    function validateDriverForm() {
+        let licenseNumber = document.getElementById("license_number").value;
+        let licensePattern = /^\d{12}$/;  // Must be exactly 12 digits
+
+        if (!licensePattern.test(licenseNumber)) {
+            alert("Driver license number must be exactly 12 digits.");
+            return false; // Prevent form submission
+        }
+        return true;
+    }
+    </script>
 </head>
 <body>
 
     <!-- Navbar -->
     <div class="navbar">
-    <a href="admin_dashboard.php">Dashboard</a>
+        <a href="admin_dashboard.php">Dashboard</a>
         <a href="manage_buses.php">Manage Buses</a>
         <a href="manage_routes.php">Manage Routes</a>
         <a href="manage_bookings.php">Manage Bookings</a>
@@ -134,9 +153,9 @@ if (isset($_POST['add_driver'])) {
 
         <!-- Driver Addition Form -->
         <div class="form-container">
-            <form action="add_driver.php?busID=<?php echo $busID; ?>" method="POST" enctype="multipart/form-data">
+            <form action="add_driver.php?busID=<?php echo $busID; ?>" method="POST" enctype="multipart/form-data" onsubmit="return validateDriverForm()">
                 <input type="text" name="driver_name" placeholder="Driver Name" required>
-                <input type="text" name="license_number" placeholder="Driver License Number" required>
+                <input type="text" id="license_number" name="license_number" placeholder="Driver License Number (12 digits)" required>
                 <input type="file" name="license_image" accept="image/*" required>
                 <button type="submit" name="add_driver">Add Driver</button>
             </form>

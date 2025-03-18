@@ -14,19 +14,29 @@ if (isset($_POST['add_bus'])) {
     $busName = $_POST['bus_name'];
     $busNumberPlate = $_POST['number_plate'];
     $busCapacity = $_POST['capacity'];
+    $departureDate = $_POST['departure_date'];
+    $departureTime = $_POST['departure_time'];
+    $fare = $_POST['fare'];
     $busImage = $_FILES['bus_image']['name'];
+
+    // Validate bus number plate (max 4 characters, letters, numbers, and hyphen allowed)
+    if (!preg_match('/^[A-Za-z0-9-]{1,4}$/', $busNumberPlate)) {
+        echo "<script>alert('Bus number plate must be a maximum of 4 characters (letters, numbers, or hyphen).'); window.history.back();</script>";
+        exit();
+    }
 
     // Upload bus image
     $targetDir = "../../uploads/bus_images/";
     $targetFile = $targetDir . basename($busImage);
-    
+
     if (move_uploaded_file($_FILES['bus_image']['tmp_name'], $targetFile)) {
-        $sql = "INSERT INTO Bus (routeID, bus_name, numberPlate, capacity, bus_image) VALUES (?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO Bus (routeID, bus_name, numberPlate, capacity, departure_date, departure_time, fare, bus_image) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([$routeID, $busName, $busNumberPlate, $busCapacity, $busImage]);
+        $stmt->execute([$routeID, $busName, $busNumberPlate, $busCapacity, $departureDate, $departureTime, $fare, $busImage]);
 
         // Get the busID of the newly inserted bus
-        $busID = $pdo->lastInsertId(); 
+        $busID = $pdo->lastInsertId();
 
         // Redirect to the driver addition page with busID as a parameter
         header("Location: add_driver.php?busID=$busID");
@@ -36,8 +46,32 @@ if (isset($_POST['add_bus'])) {
     }
 }
 
-// Fetching all buses including busID
-$sql = "SELECT busID, bus_name, routeID, numberPlate, capacity, bus_image FROM Bus";
+// Handling bus deletion
+if (isset($_GET['delete_bus'])) {
+    $busID = $_GET['delete_bus'];
+
+    // First, delete the image file if it exists
+    $sql = "SELECT bus_image FROM Bus WHERE busID = ?";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$busID]);
+    $bus = $stmt->fetch();
+    $busImagePath = "../../uploads/bus_images/" . $bus['bus_image'];
+    if (file_exists($busImagePath)) {
+        unlink($busImagePath);  // Delete the image file
+    }
+
+    // Delete the bus record from the database
+    $sql = "DELETE FROM Bus WHERE busID = ?";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$busID]);
+
+    // Redirect back to the manage buses page
+    header("Location: manage_buses.php");
+    exit();
+}
+
+// Fetching all buses
+$sql = "SELECT busID, bus_name, routeID, numberPlate, capacity, departure_date, departure_time, fare, bus_image FROM Bus";
 $stmt = $pdo->query($sql);
 $buses = $stmt->fetchAll();
 
@@ -46,6 +80,7 @@ $sql = "SELECT * FROM Route";
 $stmt = $pdo->query($sql);
 $routes = $stmt->fetchAll();
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -161,12 +196,25 @@ $routes = $stmt->fetchAll();
             background-color: #e53935;
         }
     </style>
+
+    <script>
+    function validateBusForm() {
+        let numberPlate = document.getElementById("number_plate").value;
+        let numberPattern = /^[A-Za-z0-9-]{1,4}$/;  // Allow up to 4 characters (letters, numbers, and hyphen)
+
+        if (!numberPattern.test(numberPlate)) {
+            alert("Bus number plate must be a maximum of 4 characters (letters, numbers, or hyphen).");
+            return false; // Prevent form submission
+        }
+        return true;
+    }
+    </script>
 </head>
 <body>
 
     <!-- Navbar -->
     <div class="navbar">
-    <a href="admin_dashboard.php">Dashboard</a>
+        <a href="admin_dashboard.php">Dashboard</a>
         <a href="manage_buses.php">Manage Buses</a>
         <a href="manage_routes.php">Manage Routes</a>
         <a href="manage_bookings.php">Manage Bookings</a>
@@ -180,7 +228,7 @@ $routes = $stmt->fetchAll();
         <!-- Add New Bus Form -->
         <div class="form-container">
             <h3>Add a New Bus</h3>
-            <form action="manage_buses.php" method="POST" enctype="multipart/form-data">
+            <form action="manage_buses.php" method="POST" enctype="multipart/form-data" onsubmit="return validateBusForm()">
                 <select name="routeID" required>
                     <option value="">Select Route</option>
                     <?php foreach ($routes as $route) { ?>
@@ -189,46 +237,58 @@ $routes = $stmt->fetchAll();
                 </select>
 
                 <input type="text" name="bus_name" placeholder="Bus Name" required>
-                <input type="text" name="number_plate" placeholder="Bus Number Plate" required>
-                <input type="text" name="capacity" placeholder="Bus Capacity" required>
+                <input type="text" id="number_plate" name="number_plate" placeholder="Bus Number Plate" required>
+                <input type="number" name="capacity" placeholder="Bus Capacity" required>
+                <input type="date" name="departure_date" required>
+                <input type="time" name="departure_time" required>
+                <input type="number" name="fare" placeholder="Fare Amount" step="0.01" required>
                 <input type="file" name="bus_image" accept="image/*" required>
 
                 <button type="submit" name="add_bus">Add Bus</button>
             </form>
         </div>
 
-        <!-- Existing Buses Table -->
+        <!-- Display Existing Buses -->
         <h3>Existing Buses</h3>
         <table class="buses-table">
-            <tr>
-                <th>Bus ID</th>
-                <th>Bus Name</th>
-                <th>Route</th>
-                <th>Number Plate</th>
-                <th>Capacity</th>
-                <th>Bus Image</th>
-                <th>Action</th>
-            </tr>
-            <?php foreach ($buses as $bus) { ?>
+            <thead>
                 <tr>
-                    <td><?php echo $bus['busID']; ?></td>
-                    <td><?php echo $bus['bus_name']; ?></td>
-                    <td>
-                        <?php
-                        $routeSql = "SELECT * FROM Route WHERE routeID = ?";
-                        $stmt = $pdo->prepare($routeSql);
-                        $stmt->execute([$bus['routeID']]);
-                        $route = $stmt->fetch();
-                        echo $route['source'] . " - " . $route['destination'];
-                        ?>
-                    </td>
-                    <td><?php echo $bus['numberPlate']; ?></td>
-                    <td><?php echo $bus['capacity']; ?></td>
-                    <td><img src="../uploads/bus_images/<?php echo $bus['bus_image']; ?>" alt="Bus Image"></td>
-                    <td><a href="delete_buses.php?busID=<?php echo $bus['busID']; ?>">Delete</a></td>
+                    <th>Bus Name</th>
+                    <th>Route</th>
+                    <th>Number Plate</th>
+                    <th>Capacity</th>
+                    <th>Fare</th>
+                    <th>Image</th>
+                    <th>Action</th>
                 </tr>
-            <?php } ?>
+            </thead>
+            <tbody>
+                <?php foreach ($buses as $bus) { ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($bus['bus_name']); ?></td>
+                        <td>
+                            <?php
+                                $routeID = $bus['routeID'];
+                                $routeQuery = "SELECT source, destination FROM Route WHERE routeID = ?";
+                                $routeStmt = $pdo->prepare($routeQuery);
+                                $routeStmt->execute([$routeID]);
+                                $route = $routeStmt->fetch();
+                                echo htmlspecialchars($route['source']) . " - " . htmlspecialchars($route['destination']);
+                            ?>
+                        </td>
+                        <td><?php echo htmlspecialchars($bus['numberPlate']); ?></td>
+                        <td><?php echo htmlspecialchars($bus['capacity']); ?></td>
+                        <td><?php echo htmlspecialchars($bus['fare']); ?></td>
+                        <td><img src="../../uploads/bus_images/<?php echo htmlspecialchars($bus['bus_image']); ?>" alt="Bus Image"></td>
+                        <td>
+                            <!-- Delete button -->
+                            <a href="manage_buses.php?delete_bus=<?php echo $bus['busID']; ?>" onclick="return confirm('Are you sure you want to delete this bus?');">Delete</a>
+                        </td>
+                    </tr>
+                <?php } ?>
+            </tbody>
         </table>
+
     </div>
 
 </body>
