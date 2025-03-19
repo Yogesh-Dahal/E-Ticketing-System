@@ -198,16 +198,32 @@ $routes = $stmt->fetchAll();
     </style>
 
     <script>
-    function validateBusForm() {
-        let numberPlate = document.getElementById("number_plate").value;
-        let numberPattern = /^[A-Za-z0-9-]{1,4}$/;  // Allow up to 4 characters (letters, numbers, and hyphen)
+        function validateBusForm() {
+            let numberPlate = document.getElementById("number_plate").value;
+            let numberPattern = /^[A-Za-z0-9-]{1,4}$/;  // Allow up to 4 characters (letters, numbers, and hyphen)
 
-        if (!numberPattern.test(numberPlate)) {
-            alert("Bus number plate must be a maximum of 4 characters (letters, numbers, or hyphen).");
-            return false; // Prevent form submission
+            // Bus number plate validation
+            if (!numberPattern.test(numberPlate)) {
+                alert("Bus number plate must be a maximum of 4 characters (letters, numbers, or hyphen).");
+                return false; // Prevent form submission
+            }
+
+            // Date validation (date should not be in the past, should be from tomorrow)
+            let departureDate = document.querySelector('input[name="departure_date"]').value;
+            let today = new Date();
+            let tomorrow = new Date(today);
+            tomorrow.setDate(today.getDate() + 1); // Set to tomorrow's date
+
+            // Format tomorrow date to match the input date format (yyyy-mm-dd)
+            let tomorrowDateString = tomorrow.toISOString().split('T')[0];
+
+            if (departureDate < tomorrowDateString) {
+                alert("The departure date must be tomorrow or a future date.");
+                return false; // Prevent form submission
+            }
+
+            return true;
         }
-        return true;
-    }
     </script>
 </head>
 <body>

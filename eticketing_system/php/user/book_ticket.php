@@ -36,10 +36,7 @@ $bookedSeatsArray = array_flip($bookedSeats);
 // Calculate seat distribution
 $totalSeats = $bus['capacity'];
 $rows = floor(($totalSeats - 5) / 4); // Rows with 2x2 seats
-$remainingSeats = ($totalSeats - 5) % 4; // Extra seats before last row
-
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -63,9 +60,6 @@ $remainingSeats = ($totalSeats - 5) % 4; // Extra seats before last row
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-        }
-        h2 {
-            margin-bottom: 10px;
         }
         .bus-layout {
             display: flex;
@@ -97,22 +91,10 @@ $remainingSeats = ($totalSeats - 5) % 4; // Extra seats before last row
             font-weight: bold;
             transition: 0.3s;
         }
-        .available {
-            background: #4CAF50;
-            color: white;
-        }
-        .booked {
-            background: red;
-            color: white;
-            pointer-events: none;
-        }
-        .selected {
-            background: blue;
-            color: white;
-        }
-        .button-container {
-            margin-top: 20px;
-        }
+        .available { background: #4CAF50; color: white; }
+        .booked { background: red; color: white; pointer-events: none; }
+        .selected { background: blue; color: white; }
+        .button-container { margin-top: 20px; }
         button {
             background-color: #007bff;
             color: white;
@@ -123,53 +105,45 @@ $remainingSeats = ($totalSeats - 5) % 4; // Extra seats before last row
             border-radius: 5px;
             transition: 0.3s;
         }
-        button:hover {
-            background-color: #0056b3;
-        }
+        button:hover { background-color: #0056b3; }
     </style>
 </head>
 <body>
-
 <div class="container">
     <h2>Book a Seat for <?php echo $bus['bus_name']; ?> (<?php echo $bus['numberPlate']; ?>)</h2>
     <p>Route: <?php echo $bus['source']; ?> - <?php echo $bus['destination']; ?></p>
-
     <div class="bus-layout">
         <div class="driver">Driver</div>
-        
         <?php
         $seatNumber = 1;
         for ($i = 0; $i < $rows; $i++) {
             echo "<div class='seat-row'>";
             for ($j = 0; $j < 2; $j++) {
                 $isBooked = isset($bookedSeatsArray[$seatNumber]);
-                echo "<div class='seat " . ($isBooked ? 'booked' : 'available') . "' data-seat='$seatNumber'>" . $seatNumber . "</div>";
+                echo "<div class='seat " . ($isBooked ? 'booked' : 'available') . "' data-seat='$seatNumber'>$seatNumber</div>";
                 $seatNumber++;
             }
             echo "<div style='width: 30px;'></div>";
             for ($j = 0; $j < 2; $j++) {
                 $isBooked = isset($bookedSeatsArray[$seatNumber]);
-                echo "<div class='seat " . ($isBooked ? 'booked' : 'available') . "' data-seat='$seatNumber'>" . $seatNumber . "</div>";
+                echo "<div class='seat " . ($isBooked ? 'booked' : 'available') . "' data-seat='$seatNumber'>$seatNumber</div>";
                 $seatNumber++;
             }
             echo "</div>";
         }
-        
         echo "<div class='seat-row'>";
         for ($i = 0; $i < 5; $i++) {
             $isBooked = isset($bookedSeatsArray[$seatNumber]);
-            echo "<div class='seat " . ($isBooked ? 'booked' : 'available') . "' data-seat='$seatNumber'>" . $seatNumber . "</div>";
+            echo "<div class='seat " . ($isBooked ? 'booked' : 'available') . "' data-seat='$seatNumber'>$seatNumber</div>";
             $seatNumber++;
         }
         echo "</div>";
         ?>
     </div>
-
     <div class="button-container">
         <button onclick="submitBooking()">Book Selected Seats</button>
     </div>
 </div>
-
 <script>
 let selectedSeats = [];
 
@@ -191,15 +165,29 @@ function submitBooking() {
         alert("Please select at least one seat.");
         return;
     }
-    
-    // Fetch fare per seat from PHP
-    const farePerSeat = <?php echo $bus['fare']; ?>;
-    const totalFare = selectedSeats.length * farePerSeat;
-    
-    // Redirect to payment.php with seat numbers, busID, and totalFare
-    window.location.href = "payment.php?busID=<?php echo $busID; ?>&seatNumbers=" + selectedSeats.join(",") + "&totalFare=" + totalFare;
+
+    fetch('check_seat_availability.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            busID: "<?php echo $busID; ?>",
+            selectedSeats: selectedSeats
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.bookedSeats.length > 0) {
+            alert("Some seats are already booked: " + data.bookedSeats.join(", "));
+            data.bookedSeats.forEach(seat => {
+                document.querySelector(`.seat[data-seat='${seat}']`).classList.add('booked');
+                document.querySelector(`.seat[data-seat='${seat}']`).classList.remove('selected');
+            });
+        } else {
+            const totalFare = selectedSeats.length * <?php echo $bus['fare']; ?>;
+            window.location.href = `payment.php?busID=<?php echo $busID; ?>&seatNumbers=${selectedSeats.join(",")}&totalFare=${totalFare}`;
+        }
+    });
 }
 </script>
-
 </body>
 </html>

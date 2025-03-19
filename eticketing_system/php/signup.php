@@ -21,20 +21,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } else {
         $email = trim($_POST["email"]);
 
-        // Check if email already exists in the database
-        $query = "SELECT id FROM users WHERE email = :email";
-        $stmt = $pdo->prepare($query);
-        $stmt->bindParam(":email", $email, PDO::PARAM_STR);
-        $stmt->execute();
+        // Check if email format is valid
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $email_err = "Invalid email format.";
+        } elseif (!preg_match('/^[a-zA-Z0-9._%+-]+@(gmail\.com|email\.com)$/', $email)) {
+            $email_err = "Only Gmail and Email domain addresses are allowed.";
+        } else {
+            // Check if email already exists in the database
+            $query = "SELECT id FROM users WHERE email = :email";
+            $stmt = $pdo->prepare($query);
+            $stmt->bindParam(":email", $email, PDO::PARAM_STR);
+            $stmt->execute();
 
-        if ($stmt->rowCount() > 0) {
-            $email_err = "This email is already taken.";
+            if ($stmt->rowCount() > 0) {
+                $email_err = "This email is already taken.";
+            }
         }
     }
 
     // Validate password
     if (empty(trim($_POST["password"]))) {
         $password_err = "Please enter your password.";
+    } elseif (strlen(trim($_POST["password"])) < 6) {
+        $password_err = "Password must be at least 6 characters.";
     } else {
         $password = trim($_POST["password"]);
     }
@@ -53,7 +62,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // Prepare the SQL query
         $query = "INSERT INTO users (name, email, password, role) VALUES (:name, :email, :password, :role)";
-
         $stmt = $pdo->prepare($query);
 
         // Bind parameters
@@ -147,10 +155,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         .back-link a:hover {
             text-decoration: underline;
         }
-
-        .form-container {
-            padding: 20px;
-        }
     </style>
 </head>
 <body>
@@ -159,12 +163,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <h2>Create an Account</h2>
     <form method="POST" action="signup.php">
         <div class="form-group">
-            <input type="text" name="name" placeholder="Enter your full name" value="<?php echo $name; ?>">
+            <input type="text" name="name" placeholder="Enter your full name" value="<?php echo htmlspecialchars($name); ?>">
             <span class="error"><?php echo $name_err; ?></span>
         </div>
 
         <div class="form-group">
-            <input type="email" name="email" placeholder="Enter your email" value="<?php echo $email; ?>">
+            <input type="email" name="email" placeholder="Enter your email" value="<?php echo htmlspecialchars($email); ?>">
             <span class="error"><?php echo $email_err; ?></span>
         </div>
 
@@ -178,7 +182,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <option value="">Select Role</option>
                 <option value="user" <?php echo ($role == 'user') ? 'selected' : ''; ?>>User</option>
                 <option value="admin" <?php echo ($role == 'admin') ? 'selected' : ''; ?>>Admin</option>
-
             </select>
             <span class="error"><?php echo $role_err; ?></span>
         </div>

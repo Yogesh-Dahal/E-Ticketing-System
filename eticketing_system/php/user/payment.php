@@ -1,3 +1,4 @@
+payments.php
 <?php
 session_start();
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'user') {
@@ -21,7 +22,7 @@ $totalFare = $_GET['totalFare'];
 $initialPayment = $totalFare * 0.20;
 
 // Fetch Bus Details
-$sql = "SELECT bus_name, numberPlate, fare, source, destination FROM Bus 
+$sql = "SELECT bus_name, numberPlate, fare, source, destination,departure_time,departure_date FROM Bus 
         JOIN Route ON Bus.routeID = Route.routeID 
         WHERE busID = ?";
 $stmt = $pdo->prepare($sql);
@@ -162,6 +163,9 @@ if (!$bus) {
         <input type="hidden" name="seatNumbers" value="<?php echo implode(",", $seatNumbers); ?>">
         <input type="hidden" name="totalFare" value="<?php echo $totalFare; ?>">
         <input type="hidden" name="initialPayment" value="<?php echo $initialPayment; ?>">
+        <input type="hidden" name="departure_time" value="<?php echo isset($bus['departure_time']) ? $bus['departure_time'] : ''; ?>">
+        <input type="hidden" name="departure_date" value="<?php echo isset($bus['departure_date']) ? $bus['departure_date'] : ''; ?>">  
+
 
         <div class="button-container">
             <button type="submit">Proceed to Payment</button>

@@ -1,5 +1,8 @@
+process_payment.php
 <?php
 session_start();
+// var_dump("Hello");
+// die;
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'user') {
     header("Location: login.php");
     exit();
@@ -15,7 +18,11 @@ if (!isset($_POST['busID'], $_POST['seatNumbers'], $_POST['totalFare']) || empty
 
 $busID = $_POST['busID'];
 $seatNumbers = explode(",", $_POST['seatNumbers']);
-$totalFare = $_POST['totalFare'];
+$numberOfSeats = count($seatNumbers);
+$totalFare = $_POST['totalFare']/$numberOfSeats;
+$down_payment = (0.2 * $totalFare);
+$departure_time = $_POST['departure_time'];
+$departure_date = $_POST['departure_date'];
 
 // Simulate payment success (in real case, you would integrate a payment gateway here)
 $paymentSuccess = true;  // Assume payment is successful
@@ -23,9 +30,11 @@ $paymentSuccess = true;  // Assume payment is successful
 if ($paymentSuccess) {
     // Insert booking details into Bookings table
     foreach ($seatNumbers as $seat) {
-        $insertQuery = "INSERT INTO Bookings (busID, seat_number, userID) VALUES (?, ?, ?)";
+        // $insertQuery = "INSERT INTO Bookings (busID, seat_number, userID) VALUES (?, ?, ?)";
+        $insertQuery = "INSERT INTO bookings (busID, userID, seat_number, booking_date, departure_time, departure_date, total_fare,down_payment, refund_status)
+              VALUES(?,?,?,NOW(),?,?,?,?,?)";
         $stmt = $pdo->prepare($insertQuery);
-        $stmt->execute([$busID, $seat, $_SESSION['userID']]);
+        $stmt->execute([$busID,  $_SESSION['userID'],$seat,$departure_time,$departure_date,$totalFare,$down_payment,'not_requested']);
     }
 
     echo "<script>alert('Payment Successful! Seats have been booked.'); window.location.href = 'my_bookings.php';</script>";
