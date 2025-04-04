@@ -5,6 +5,8 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'user') {
     exit();
 }
 
+// i am adding it to github
+
 include('../db_connect.php');
 
 // Get the logged-in user ID

@@ -3,8 +3,8 @@
 include 'db_connect.php';
 
 // Initialize variables
-$name = $email = $password = $role = "";
-$name_err = $email_err = $password_err = $role_err = "";
+$name = $email = $password = "";
+$name_err = $email_err = $password_err = "";
 
 // Process form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -48,17 +48,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $password = trim($_POST["password"]);
     }
 
-    // Validate role
-    if (empty(trim($_POST["role"]))) {
-        $role_err = "Please select a role.";
-    } else {
-        $role = trim($_POST["role"]);
-    }
-
     // If no errors, insert data into database
-    if (empty($name_err) && empty($email_err) && empty($password_err) && empty($role_err)) {
+    if (empty($name_err) && empty($email_err) && empty($password_err)) {
         // Hash the password
         $password_hash = password_hash($password, PASSWORD_DEFAULT);
+        $role = "user"; // Default role set to 'user'
 
         // Prepare the SQL query
         $query = "INSERT INTO users (name, email, password, role) VALUES (:name, :email, :password, :role)";
@@ -115,7 +109,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             margin-bottom: 15px;
         }
 
-        .form-group input, .form-group select {
+        .form-group input {
             width: 100%;
             padding: 12px;
             margin: 5px 0;
@@ -175,15 +169,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <div class="form-group">
             <input type="password" name="password" placeholder="Enter your password">
             <span class="error"><?php echo $password_err; ?></span>
-        </div>
-
-        <div class="form-group">
-            <select name="role">
-                <option value="">Select Role</option>
-                <option value="user" <?php echo ($role == 'user') ? 'selected' : ''; ?>>User</option>
-                <option value="admin" <?php echo ($role == 'admin') ? 'selected' : ''; ?>>Admin</option>
-            </select>
-            <span class="error"><?php echo $role_err; ?></span>
         </div>
 
         <div class="form-group">
